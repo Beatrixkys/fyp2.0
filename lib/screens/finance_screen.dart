@@ -100,11 +100,13 @@ class _FinanceScreenState extends State<FinanceScreen> {
                       route: "/managefinance",
                       button: "Manage"),
                   space,
+                  /*
                   const SizedBox(
                     width: 400,
                     height: 300,
                     child: RecordList(),
                   ),
+                  */
                 ],
               ),
             )
@@ -195,7 +197,7 @@ class _ManageFinanceState extends State<ManageFinance> {
                   SizedBox(
                       height: 400,
                       child:
-                          accounts ? const AccountList() : const RecordList()),
+                          accounts ? const AccountList() : const AccountList()/*const RecordList()*/),
                 ],
               ),
             )),

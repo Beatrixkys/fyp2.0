@@ -17,8 +17,12 @@ class _AccountListState extends State<AccountList> {
   @override
   Widget build(BuildContext context) {
     List<AccountsData> accounts = [
-      AccountsData(name: "Bank", amount: 50, accountid: '1'),
-      AccountsData(name: "Cash", amount: 50, accountid: '2'),
+      AccountsData(name: "Bank", amount: 50, accountid: '1', arecords: [
+        {'amount': 50, 'type': "income"}
+      ]),
+      AccountsData(name: "Cash", amount: 50, accountid: '2', arecords: [
+        {'amount': 50, 'type': "income"}
+      ]),
     ];
 
     return ListView.builder(
@@ -177,8 +181,12 @@ class _AccountCardListState extends State<AccountCardList> {
   @override
   Widget build(BuildContext context) {
     List<AccountsData> accounts = [
-      AccountsData(name: "Bank", amount: 50, accountid: '1'),
-      AccountsData(name: "Cash", amount: 50, accountid: '2'),
+      AccountsData(name: "Bank", amount: 50, accountid: '1', arecords: [
+        {'amount': 50, 'type': "income"}
+      ]),
+      AccountsData(name: "Cash", amount: 50, accountid: '2', arecords: [
+        {'amount': 50, 'type': "income"}
+      ]),
     ];
     return ListView.builder(
       scrollDirection: Axis.horizontal,

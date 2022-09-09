@@ -18,17 +18,14 @@ class _GoalListState extends State<GoalList> {
   Widget build(BuildContext context) {
     List<GoalsData> goals = [
       GoalsData(
-          amount: 50,
           goalsid: '1',
-          progress: 80,
-          target: 'Income',
-          title: 'Save'),
-      GoalsData(
-          amount: 50,
-          goalsid: '2',
-          progress: 80,
-          target: 'Income',
-          title: 'Save'),
+          progress: 10,
+          name: 'Save',
+          amountSaved: 50,
+          amountToSave: 500,
+          grecords: [
+            {"amount": 50, "type": "Bank"}
+          ]),
     ];
 
     return ListView.builder(
@@ -57,9 +54,8 @@ class GoalsTile extends StatelessWidget {
                   const EdgeInsets.symmetric(vertical: 20.0, horizontal: 60.0),
               child: GoalSettingsForm(
                 gid: goal.goalsid,
-                gtitle: goal.title,
-                gamount: goal.amount,
-                gtarget: goal.target,
+                gtitle: goal.name,
+                gamount: goal.amountToSave,
               ),
             );
           });
@@ -73,8 +69,8 @@ class GoalsTile extends StatelessWidget {
           leading: CircularProgressIndicator(
             value: (goal.progress / 100).toDouble(),
           ),
-          title: Text(goal.title),
-          subtitle: Text('${goal.target} of ${goal.amount}%'),
+          title: Text(goal.name),
+          subtitle: Text('${goal.amountSaved} of ${goal.amountToSave} saved '),
           trailing: SizedBox(
             width: 96,
             child: Row(
@@ -103,7 +99,6 @@ class GoalSettingsForm extends StatefulWidget {
 
     required this.gid,
     required this.gtitle,
-    required this.gtarget,
     required this.gamount,
     //required this.genddate
   }) : super(key: key);
@@ -111,7 +106,6 @@ class GoalSettingsForm extends StatefulWidget {
   //final String uid;
   final String gid;
   final String gtitle;
-  final String gtarget;
   final int gamount;
   //final Timestamp genddate;
   @override
@@ -134,13 +128,11 @@ class _GoalSettingsFormState extends State<GoalSettingsForm> {
   @override
   Widget build(BuildContext context) {
     String dropdowntitlevalue = widget.gtitle;
-    String dropdowntargetvalue = widget.gtarget;
     String amount = (widget.gamount).toString();
     //DateTime? _dateTime = (widget.genddate).toDate();
 
     //mock database
     List<String> goalTitle = ['Save', 'Reduce'];
-    List<String> goalTarget = ['Income', 'Expense'];
     return Form(
       key: _formKey,
       child: SizedBox(
@@ -176,28 +168,6 @@ class _GoalSettingsFormState extends State<GoalSettingsForm> {
                 }).toList(),
               ),
 
-              smallSpace,
-              const Text(
-                'Goal Target',
-                style: kSubTextStyle,
-              ),
-
-              DropdownButtonFormField(
-                value: dropdowntargetvalue,
-                icon: const Icon(Icons.keyboard_arrow_down_outlined),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    dropdowntargetvalue = newValue!;
-                  });
-                },
-                items: goalTarget.map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-
               space,
 
               //Goal Amount
@@ -211,31 +181,6 @@ class _GoalSettingsFormState extends State<GoalSettingsForm> {
               ),
 
               space,
-
-              //TIME
-              const Text(
-                'Choose End Date ',
-                style: kSubTextStyle,
-              ),
-
-              TextButton.icon(
-                  onPressed: () async {
-                    /*DateTime? _newDate = await showDatePicker(
-                      context: context,
-                      firstDate: DateTime.now(),
-                      initialDate: DateTime.now(),
-                      lastDate: DateTime(2222));
-
-                  if (_newDate == null) return;
-
-                  setState(() => _dateTime = _newDate);*/
-                  },
-                  icon: const Icon(Icons.calendar_today),
-                  label: const Text(
-                      'Choose a Date' /*_dateTime == null
-                    ? 'Choose A Date'
-                    : DateFormat('dd/MM/yyyy').format(_dateTime!).toString()),*/
-                      )),
 
               space,
 
@@ -286,31 +231,16 @@ class GoalCardList extends StatefulWidget {
 class _GoalCardListState extends State<GoalCardList> {
   @override
   Widget build(BuildContext context) {
-    List<GoalsData> goals = [
+     List<GoalsData> goals = [
       GoalsData(
-          amount: 50,
           goalsid: '1',
-          progress: 80,
-          target: 'Income',
-          title: 'Save'),
-      GoalsData(
-          amount: 50,
-          goalsid: '2',
-          progress: 80,
-          target: 'Income',
-          title: 'Save'),
-      GoalsData(
-          amount: 50,
-          goalsid: '2',
-          progress: 80,
-          target: 'Income',
-          title: 'Save'),
-      GoalsData(
-          amount: 50,
-          goalsid: '2',
-          progress: 80,
-          target: 'Income',
-          title: 'Save'),
+          progress: 10,
+          name: 'Save',
+          amountSaved: 50,
+          amountToSave: 500,
+          grecords: [
+            {"amount": 50, "type": "Bank"}
+          ]),
     ];
 
     return ListView.builder(

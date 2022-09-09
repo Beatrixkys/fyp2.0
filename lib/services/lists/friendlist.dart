@@ -19,24 +19,11 @@ class _LeaderboardListState extends State<LeaderboardList> {
           uid: "1",
           name: "Ashley",
           email: "a@mail.com",
-          personaname: "Owl",
-          personaDescription: "personaDescription",
-          progress: 80),
-      MyUserData(
-          uid: "1",
-          name: "Ashley",
-          email: "a@mail.com",
-          personaname: "Owl",
-          personaDescription: "personaDescription",
-          progress: 80),
-      MyUserData(
-          uid: "1",
-          name: "Ashley",
-          email: "a@mail.com",
-          personaname: "Owl",
-          personaDescription: "personaDescription",
+          persona: {'persona': "Owl", 'type': "personaDescr"},
+          friends: [{'name':"Kang","progress":80}],
           progress: 80),
     ];
+    
 
     return ListView.builder(
       itemCount: friends.length,
@@ -95,32 +82,10 @@ class _FriendRequestListState extends State<FriendRequestList> {
           uid: "1",
           name: "Ashley",
           email: "a@mail.com",
-          personaname: "Owl",
-          personaDescription: "personaDescription",
-          progress: 80),
-      MyUserData(
-          uid: "1",
-          name: "Ashley",
-          email: "a@mail.com",
-          personaname: "Owl",
-          personaDescription: "personaDescription",
-          progress: 80),
-      MyUserData(
-          uid: "1",
-          name: "Ashley",
-          email: "a@mail.com",
-          personaname: "Owl",
-          personaDescription: "personaDescription",
-          progress: 80),
-      MyUserData(
-          uid: "1",
-          name: "Ashley",
-          email: "a@mail.com",
-          personaname: "Owl",
-          personaDescription: "personaDescription",
+          persona: {'persona': "Owl", 'type': "personaDescr"},
+          friends: [{'name':"Kang","progress":80}],
           progress: 80),
     ];
-
     return ListView.builder(
       itemCount: friends.length,
       itemBuilder: (context, index) {

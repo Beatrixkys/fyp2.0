@@ -176,11 +176,11 @@ class GoalCard extends StatelessWidget {
               ),
             ),
             Text(
-              goal.title,
+              goal.name,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             Text(
-              '${goal.progress}% of ${goal.target}',
+              '${goal.amountSaved} of ${goal.amountToSave} saved ',
             ),
           ],
         ),

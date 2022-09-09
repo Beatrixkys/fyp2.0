@@ -5,7 +5,6 @@ import 'package:fyp2/screens/components/drawer.dart';
 import 'package:fyp2/screens/components/header.dart';
 import 'package:fyp2/screens/components/progress_bar.dart';
 import 'package:fyp2/screens/components/theme_button.dart';
-import 'package:fyp2/services/lists/reclist.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 
 import '../constant.dart';
@@ -118,11 +117,12 @@ class HomeScreen extends StatelessWidget {
                       title: "Overview Of Records",
                       route: "/",
                       button: "Manage"),
+                  /*
                   SizedBox(
                     width: MediaQuery.of(context).size.width * 0.95,
                     height: MediaQuery.of(context).size.height * 0.4,
                     child: const RecordList(),
-                  ),
+                  ),*/
                 ],
               ),
             ),
