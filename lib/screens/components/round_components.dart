@@ -21,7 +21,7 @@ class RoundTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       alignment: Alignment.center,
-      width: 300,
+      width: MediaQuery.of(context).size.width * 0.6,
       child: TextFormField(
         obscureText: isPassword ? true : false,
         decoration: InputDecoration(
@@ -57,7 +57,7 @@ class RoundDoubleTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 300,
+      width: MediaQuery.of(context).size.width * 0.6,
       alignment: Alignment.center,
       child: TextFormField(
         decoration: InputDecoration(

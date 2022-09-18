@@ -75,6 +75,38 @@ class SmallButton extends StatelessWidget {
   }
 }
 
+class SmallButton2 extends StatelessWidget {
+  final String title;
+  final Future<dynamic> route;
+
+  const SmallButton2({Key? key, required this.title, required this.route})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 40,
+      width: 120,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondary,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: TextButton(
+        onPressed: () => route,
+        child: Center(
+          child: Text(
+            title,
+            style: TextStyle(
+                color: Theme.of(context).primaryColorDark,
+                fontWeight: FontWeight.w600,
+                fontSize: 20),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class ShortcutButton extends StatefulWidget {
   //final Function() onPressed;
   //final String tooltip;
@@ -158,7 +190,7 @@ class _ShortcutButtonState extends State<ShortcutButton>
     return FloatingActionButton(
       heroTag: "b1",
       onPressed: () {
-        Navigator.pushNamed(context, "/addfinance");
+        Navigator.pushNamed(context, "/addrecord");
       },
       tooltip: 'Add',
       child: const Icon(Icons.add),
@@ -169,7 +201,7 @@ class _ShortcutButtonState extends State<ShortcutButton>
     return FloatingActionButton(
       heroTag: "b2",
       onPressed: () {
-        Navigator.pushNamed(context, "/managefinance");
+        Navigator.pushNamed(context, "/bioauth");
       },
       tooltip: 'Edit',
       child: const Icon(Icons.edit),
@@ -180,7 +212,7 @@ class _ShortcutButtonState extends State<ShortcutButton>
     return FloatingActionButton(
       heroTag: "b3",
       onPressed: () {
-        Navigator.pushNamed(context, "/managegoals");
+        Navigator.pushNamed(context, "/setupuser");
       },
       tooltip: 'Goal',
       child: const Icon(

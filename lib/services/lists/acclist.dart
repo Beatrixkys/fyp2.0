@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:fyp2/services/database.dart';
+import 'package:fyp2/services/logic.dart';
 import 'package:fyp2/services/validator.dart';
+import 'package:provider/provider.dart';
 
 import '../../constant.dart';
 import '../../screens/components/cards.dart';
@@ -7,7 +10,8 @@ import '../../screens/components/round_components.dart';
 import '../models/finance.dart';
 
 class AccountList extends StatefulWidget {
-  const AccountList({Key? key}) : super(key: key);
+  final String uid;
+  const AccountList({Key? key, required this.uid}) : super(key: key);
 
   @override
   State<AccountList> createState() => _AccountListState();
@@ -16,29 +20,23 @@ class AccountList extends StatefulWidget {
 class _AccountListState extends State<AccountList> {
   @override
   Widget build(BuildContext context) {
-    List<AccountsData> accounts = [
-      AccountsData(name: "Bank", amount: 50, accountid: '1', arecords: [
-        {'amount': 50, 'type': "income"}
-      ]),
-      AccountsData(name: "Cash", amount: 50, accountid: '2', arecords: [
-        {'amount': 50, 'type': "income"}
-      ]),
-    ];
+    final accounts = Provider.of<List<AccountsData>>(context);
 
     return ListView.builder(
       itemCount: accounts.length,
       itemBuilder: (context, index) {
-        return AccountsTile(account: accounts[index]);
+        return AccountsTile(account: accounts[index], uid: widget.uid);
       },
     );
   }
 }
 
 class AccountsTile extends StatelessWidget {
-  const AccountsTile({Key? key, required this.account}) : super(key: key);
+  const AccountsTile({Key? key, required this.account, required this.uid})
+      : super(key: key);
 
   final AccountsData account;
-
+  final String uid;
   @override
   Widget build(BuildContext context) {
     void _showSettingsPanel() {
@@ -50,9 +48,8 @@ class AccountsTile extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(vertical: 20.0, horizontal: 60.0),
               child: AccountSettingsForm(
-                aid: account.accountid,
-                aname: account.name,
-                aamount: account.amount,
+                account: account,
+                uid: uid,
               ),
             );
           });
@@ -82,7 +79,9 @@ class AccountsTile extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outlined),
-                  onPressed: () async {},
+                  onPressed: () async {
+                    await DatabaseService(uid).deleteAccount(account.accountid);
+                  },
                 ),
               ],
             ),
@@ -94,13 +93,14 @@ class AccountsTile extends StatelessWidget {
 }
 
 class AccountSettingsForm extends StatefulWidget {
-  const AccountSettingsForm(
-      {Key? key, required this.aid, required this.aname, required this.aamount})
-      : super(key: key);
+  const AccountSettingsForm({
+    Key? key,
+    required this.account,
+    required this.uid,
+  }) : super(key: key);
 
-  final String aid;
-  final String aname;
-  final int aamount;
+  final AccountsData account;
+  final String uid;
 
   @override
   State<AccountSettingsForm> createState() => _AccountSettingsFormState();
@@ -115,8 +115,8 @@ class _AccountSettingsFormState extends State<AccountSettingsForm> {
 
   @override
   Widget build(BuildContext context) {
-    String name = widget.aname;
-    String amount = widget.aamount.toString();
+    String name = widget.account.name;
+    String amount = widget.account.amount.toString();
     return Form(
       key: _formKey,
       child: Column(
@@ -151,27 +151,63 @@ class _AccountSettingsFormState extends State<AccountSettingsForm> {
               },
               validator: val.nameVal),
           space,
-          SizedBox(
-            width: 300,
-            child: ElevatedButton(
-              onPressed: () async {
-                Navigator.pushNamed(context, '/finance');
-              },
-              style: kButtonStyle,
-              child: const Text(
-                'Save',
-                style: kButtonTextStyle,
-              ),
-            ),
-          ),
+          saveBtn(),
         ],
       ),
     );
   }
+
+  Widget saveBtn() {
+    return StreamBuilder<IncomeExpenseData>(
+        stream: DatabaseService(widget.uid).incomeExpense,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            var ieData = snapshot.data!;
+            return SizedBox(
+              width: 300,
+              child: ElevatedButton(
+                onPressed: () async {
+                  var accamount = 0;
+                  var accname = '';
+                  if (amountController.text == '') {
+                    accamount = widget.account.amount;
+                  } else {
+                    accamount = int.parse(amountController.text);
+                  }
+
+                  if (nameController.text == '') {
+                    accname = widget.account.name;
+                  } else {
+                    accname = nameController.text;
+                  }
+
+                  //total old//old
+                  var updatedIncome = LogicService().newAmount(
+                      ieData.income, widget.account.amount, accamount);
+
+                  await DatabaseService(widget.uid).editAccount(accname,
+                      accamount, updatedIncome, widget.account.accountid);
+
+                  if (!mounted) return;
+                  Navigator.pushNamed(context, '/finance');
+                },
+                style: kButtonStyle,
+                child: const Text(
+                  'Save',
+                  style: kButtonTextStyle,
+                ),
+              ),
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
+        });
+  }
 }
 
 class AccountCardList extends StatefulWidget {
-  const AccountCardList({Key? key}) : super(key: key);
+  const AccountCardList({
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<AccountCardList> createState() => _AccountCardListState();
@@ -180,14 +216,8 @@ class AccountCardList extends StatefulWidget {
 class _AccountCardListState extends State<AccountCardList> {
   @override
   Widget build(BuildContext context) {
-    List<AccountsData> accounts = [
-      AccountsData(name: "Bank", amount: 50, accountid: '1', arecords: [
-        {'amount': 50, 'type': "income"}
-      ]),
-      AccountsData(name: "Cash", amount: 50, accountid: '2', arecords: [
-        {'amount': 50, 'type': "income"}
-      ]),
-    ];
+    final accounts = Provider.of<List<AccountsData>>(context);
+
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       itemCount: accounts.length,

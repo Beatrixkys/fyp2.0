@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fyp2/screens/components/loading.dart';
+import 'package:fyp2/services/local_auth.dart';
 import 'package:fyp2/services/validator.dart';
 
 import '../constant.dart';
+import '../services/auth.dart';
 import 'components/animated_image.dart';
 import 'components/round_components.dart';
 
@@ -14,6 +16,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  final AuthService _auth = AuthService();
   String error = '';
   String email = "";
   String password = "";
@@ -119,8 +122,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             child: Text(
                               "Forget Password?",
                               style: TextStyle(
-                                  color:
-                                      Theme.of(context).primaryColorDark),
+                                  color: Theme.of(context).primaryColorDark),
                             ),
                           ),
                         // ignore: sized_box_for_whitespace
@@ -130,7 +132,32 @@ class _AuthScreenState extends State<AuthScreen> {
                             children: [
                               ElevatedButton(
                                 onPressed: () async {
-                                  Navigator.pushNamed(context, '/home');
+                                  if (_formKey.currentState!.validate()) {
+                                    setState(() => loading = true);
+                                    var password =
+                                        passwordController.value.text;
+                                    var email = emailController.value.text;
+                                    var name = nameController.value.text;
+
+                                    dynamic result = showSignIn
+                                        ? await _auth
+                                            .signInWithEmailAndPassword(
+                                                email, password, context)
+                                        : await _auth.register(
+                                            email, password, name, context);
+
+                                    if (result == null) {
+                                      setState(() {
+                                        loading = false;
+                                        error = "Please supply valid email";
+                                        //TODO! Show POP UP ERROR
+                                      });
+                                    }
+
+                                    if (!mounted) return;
+                                    Navigator.pushNamed(context,
+                                        showSignIn ? '/home' : '/setupprofile');
+                                  }
                                 },
                                 style: kButtonStyle,
                                 child: Text(
@@ -188,7 +215,7 @@ class BioAuthScreen extends StatefulWidget {
 }
 
 class _BioAuthScreenState extends State<BioAuthScreen> {
-  bool isAuthenticated = true;
+  bool isAuthenticating = false;
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +242,13 @@ class _BioAuthScreenState extends State<BioAuthScreen> {
                         color: Theme.of(context).primaryColorDark,
                         highlightColor: Colors.white,
                         onPressed: () async {
-                          Navigator.pushNamed(context, '/home');
+                          bool isAuthenticated =
+                              await LocalAuthApi.authenticate();
+
+                          if (isAuthenticated) {
+                            if (!mounted) return;
+                            Navigator.pushReplacementNamed(context, '/home');
+                          }
                         },
                       ),
                     ],

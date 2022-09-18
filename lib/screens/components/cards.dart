@@ -3,6 +3,7 @@ import 'package:fyp2/services/models/persona.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 
 import '../../constant.dart';
+import '../../services/database.dart';
 import '../../services/models/finance.dart';
 import '../../services/models/goals.dart';
 
@@ -57,26 +58,29 @@ class AccountsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 160,
-      width: 130,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(40),
-        color: Theme.of(context).primaryColor,
-      ),
-      child: Column(
-        children: <Widget>[
-          Image.asset("assets/bank.png", height: 90),
-          Text(
-            account.name,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          Text(
-            ('RM ${account.amount}'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ],
+    return InkWell(
+      onTap: () {},
+      child: Container(
+        height: 160,
+        width: 130,
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(40),
+          color: Theme.of(context).primaryColor,
+        ),
+        child: Column(
+          children: <Widget>[
+            Image.asset("assets/bank.png", height: 90),
+            Text(
+              account.name,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            Text(
+              ('RM ${account.amount}'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -125,6 +129,53 @@ class ExpenseCard extends StatelessWidget {
   }
 }
 
+class IECards extends StatelessWidget {
+  final String uid;
+  const IECards({super.key, required this.uid});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<IncomeExpenseData>(
+        stream: DatabaseService(uid).incomeExpense,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            var ieData = snapshot.data!;
+            return Row(
+              children: [
+                ExpenseCard(title: "Income", amount: ieData.income.toString()),
+                ExpenseCard(
+                    title: "Expense", amount: ieData.expense.toString()),
+              ],
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
+        });
+  }
+}
+
+class AssetCard extends StatelessWidget {
+  final String uid;
+  const AssetCard({super.key, required this.uid});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<IncomeExpenseData>(
+        stream: DatabaseService(uid).incomeExpense,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            var ieData = snapshot.data!;
+            var asset = ieData.income - ieData.expense;
+            return Text(
+              'Total Assets: RM $asset',
+              textAlign: TextAlign.start,
+              style: kSubTextStyle,
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
+        });
+  }
+}
+
 class GoalCard extends StatelessWidget {
   final GoalsData goal;
   //final String uid;
@@ -141,7 +192,7 @@ class GoalCard extends StatelessWidget {
       onTap: () {},
       child: Container(
         padding: const EdgeInsets.all(15),
-        width: MediaQuery.of(context).size.width * 0.4,
+        width: MediaQuery.of(context).size.width * 0.35,
         height: MediaQuery.of(context).size.height * 0.3,
 
         //height: 250,
@@ -171,16 +222,20 @@ class GoalCard extends StatelessWidget {
                   '${goal.progress}%',
                   style: TextStyle(
                       fontWeight: FontWeight.w700,
+                      fontSize: 22,
                       color: Theme.of(context).colorScheme.tertiary),
                 ),
               ),
             ),
             Text(
               goal.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 25),
             ),
             Text(
-              '${goal.amountSaved} of ${goal.amountToSave} saved ',
+              'RM${goal.amountSaved} of RM${goal.amountToSave} saved ',
+              style: const TextStyle(
+                fontSize: 15,
+              ),
             ),
           ],
         ),
@@ -191,16 +246,26 @@ class GoalCard extends StatelessWidget {
 
 class PersonaCard extends StatelessWidget {
   final PersonaData persona;
+  final String uid;
+  final bool newUser;
 
   const PersonaCard({
     Key? key,
     required this.persona,
+    required this.uid,
+    required this.newUser,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {}, //update database details
+      onTap: () async {
+        newUser
+            ? await DatabaseService(uid)
+                .savePersona(persona.pname, persona.pdescription, persona.icon)
+            : await DatabaseService(uid).updatePersona(
+                persona.pname, persona.pdescription, persona.icon);
+      }, //update database details
       child: Container(
         height: MediaQuery.of(context).size.height * 0.2,
         width: MediaQuery.of(context).size.width * 0.32,
@@ -221,11 +286,41 @@ class PersonaCard extends StatelessWidget {
           children: <Widget>[
             Image.asset(persona.icon, height: 110),
             Text(
-              persona.personaname,
+              persona.pname,
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class BadgeCard extends StatelessWidget {
+  final BadgesData goal;
+  const BadgeCard({Key? key, required this.goal}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.3,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(40),
+        color: Theme.of(context).primaryColor,
+      ),
+      child: Column(
+        children: <Widget>[
+          Image.asset("assets/trophy.png", height: 90),
+          Text(
+            goal.name,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          ),
+          Text(
+            ('Total RM${goal.amountSaved} Saved'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
+          ),
+        ],
       ),
     );
   }

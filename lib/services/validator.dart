@@ -18,7 +18,7 @@ final nameVal =
   final amountVal = MultiValidator([
     RequiredValidator(errorText: 'Field is Required'),
     RangeValidator(
-        min: 0, max: 100, errorText: 'Percentage must be in range 0-100')
+        min: 0, max:1000000000, errorText: 'Amount must be in range 0-100')
   ]);
 
 }

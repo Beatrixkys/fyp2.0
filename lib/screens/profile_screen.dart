@@ -1,20 +1,38 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fyp2/screens/components/drawer.dart';
 import 'package:fyp2/screens/components/header.dart';
+import 'package:provider/provider.dart';
 
 import '../constant.dart';
+import '../services/auth.dart';
+import '../services/database.dart';
 import '../services/lists/personalist.dart';
+import '../services/models/persona.dart';
+import '../services/models/user.dart';
 import 'components/theme_button.dart';
 
-class ProfileScreen extends StatelessWidget {
-  final String uid;
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({
+    Key? key,
+  }) : super(key: key);
 
-  const ProfileScreen({Key? key, required this.uid}) : super(key: key);
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
 
+class _ProfileScreenState extends State<ProfileScreen> {
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final AuthService _auth = AuthService();
   @override
   Widget build(BuildContext context) {
     final controller = ScrollController();
-    String personaPic = 'assets/owl.png';
+
+    final User? user = auth.currentUser;
+    final uid = user!.uid;
+
+    Stream<MyUserData> myUserData = DatabaseService(uid).user;
+    Stream<PersonaData> myPersonaData = DatabaseService(uid).persona;
 
     return Scaffold(
       drawer: const NavDrawer(),
@@ -39,49 +57,26 @@ class ProfileScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: <Widget>[
-                        CircleAvatar(
+                        ProfilePic(myPersonaData: myPersonaData),
+                        /*CircleAvatar(
                           backgroundColor:
                               Theme.of(context).colorScheme.primary,
                           radius: 80,
                           backgroundImage: AssetImage(personaPic),
-                        ),
+                        ),*/
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Text(
-                              ('Beatrix Kang'),
-                              textAlign: TextAlign.start,
-                              style: kHeadingTextStyle,
+                            NameText(
+                              myUserData: myUserData,
                             ),
-                            const Text(
-                              ('b@mail.com'),
+                            Text(
+                              (user.email!),
                               textAlign: TextAlign.start,
                               style: kSubTextStyle,
                             ),
                             space,
-                            Container(
-                              height: 40,
-                              width: 120,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.secondary,
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              child: TextButton(
-                                onPressed: () async {
-                                  Navigator.pushNamed(context, '/');
-                                },
-                                child: Center(
-                                  child: Text(
-                                    'Log Out',
-                                    style: TextStyle(
-                                        color:
-                                            Theme.of(context).primaryColorDark,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 20),
-                                  ),
-                                ),
-                              ),
-                            ),
+                            logOutBtn(),
                           ],
                         ),
                       ],
@@ -92,16 +87,8 @@ class ProfileScreen extends StatelessWidget {
             ),
             space,
             const Text('PERSONA TYPE', style: kTitleTextStyle),
-            const Text(
-              "Owl",
-              textAlign: TextAlign.start,
-              style: kHeadingTextStyle,
-            ),
-            const Text(
-              "Consistency Based",
-              textAlign: TextAlign.start,
-              style: kSubTextStyle,
-            ),
+            showPersona(myPersonaData),
+            showPersonaDescription(myPersonaData),
             Divider(
               height: MediaQuery.of(context).size.height * 0.05,
               thickness: 4,
@@ -112,12 +99,147 @@ class ProfileScreen extends StatelessWidget {
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.95,
               height: MediaQuery.of(context).size.height * 0.4,
-              child: const PersonaCardList(),
+              child: PersonaCardList(
+                uid: uid,
+                newUser: false,
+              ),
             ),
             space,
           ],
         ),
       ),
+    );
+  }
+
+  Widget showName() {
+    var name = Provider.of<MyUserData>(context);
+
+    return Text(
+      name.name,
+      textAlign: TextAlign.start,
+      style: kHeadingTextStyle,
+    );
+  }
+
+  Widget showPersona(myPersonaData) {
+    return StreamBuilder<PersonaData>(
+      stream: myPersonaData,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          var personaData = snapshot.data;
+          var value = personaData!.pname;
+          return Text(
+            value,
+            textAlign: TextAlign.start,
+            style: kHeadingTextStyle,
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+
+  Widget showPersonaDescription(myPersonaData) {
+    return StreamBuilder<PersonaData>(
+      stream: myPersonaData,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          var personaData = snapshot.data;
+          var value = personaData!.pdescription;
+          return Text(
+            value,
+            textAlign: TextAlign.start,
+            style: kHeadingTextStyle,
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+
+  Widget logOutBtn() {
+    return Container(
+      height: 40,
+      width: 120,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondary,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: TextButton(
+        onPressed: () async {
+          await _auth.signOut();
+
+          if (!mounted) return;
+          Navigator.pushNamed(context, '/');
+        },
+        child: Center(
+          child: Text(
+            'Log Out',
+            style: TextStyle(
+                color: Theme.of(context).primaryColorDark,
+                fontWeight: FontWeight.w600,
+                fontSize: 20),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class NameText extends StatelessWidget {
+  final Stream<MyUserData?> myUserData;
+
+  const NameText({
+    Key? key,
+    required this.myUserData,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    MyUserData? userData;
+
+    return StreamBuilder<MyUserData?>(
+      stream: myUserData,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          userData = snapshot.data;
+          var value = userData!.name;
+          return Text(
+            value,
+            textAlign: TextAlign.start,
+            style: kHeadingTextStyle,
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+}
+
+class ProfilePic extends StatelessWidget {
+  final Stream<PersonaData> myPersonaData;
+
+  const ProfilePic({
+    Key? key,
+    required this.myPersonaData,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<PersonaData>(
+      stream: myPersonaData,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          var personaData = snapshot.data;
+          var value = personaData!.icon;
+          return CircleAvatar(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            radius: 80,
+            backgroundImage: AssetImage(value),
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
     );
   }
 }

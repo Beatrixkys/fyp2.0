@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:fyp2/services/validator.dart';
+import 'package:provider/provider.dart';
 
 import '../../constant.dart';
 import '../../screens/components/cards.dart';
 import '../../screens/components/round_components.dart';
+import '../database.dart';
+import '../logic.dart';
 import '../models/goals.dart';
 
 class GoalList extends StatefulWidget {
-  const GoalList({Key? key}) : super(key: key);
+  final String uid;
+  const GoalList({Key? key, required this.uid}) : super(key: key);
 
   @override
   State<GoalList> createState() => _GoalListState();
@@ -16,31 +20,23 @@ class GoalList extends StatefulWidget {
 class _GoalListState extends State<GoalList> {
   @override
   Widget build(BuildContext context) {
-    List<GoalsData> goals = [
-      GoalsData(
-          goalsid: '1',
-          progress: 10,
-          name: 'Save',
-          amountSaved: 50,
-          amountToSave: 500,
-          grecords: [
-            {"amount": 50, "type": "Bank"}
-          ]),
-    ];
+    final goals = Provider.of<List<GoalsData>>(context);
 
     return ListView.builder(
       itemCount: goals.length,
       itemBuilder: (context, index) {
-        return GoalsTile(goal: goals[index]);
+        return GoalsTile(goal: goals[index], uid: widget.uid);
       },
     );
   }
 }
 
 class GoalsTile extends StatelessWidget {
-  const GoalsTile({Key? key, required this.goal}) : super(key: key);
+  const GoalsTile({Key? key, required this.goal, required this.uid})
+      : super(key: key);
 
   final GoalsData goal;
+  final String uid;
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +49,8 @@ class GoalsTile extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(vertical: 20.0, horizontal: 60.0),
               child: GoalSettingsForm(
-                gid: goal.goalsid,
-                gtitle: goal.name,
-                gamount: goal.amountToSave,
+                goal: goal,
+                uid: uid,
               ),
             );
           });
@@ -81,7 +76,9 @@ class GoalsTile extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outlined),
-                  onPressed: () async {},
+                  onPressed: () async {
+                    await DatabaseService(uid).deleteGoal(goal.goalsid);
+                  },
                 ),
               ],
             ),
@@ -95,18 +92,13 @@ class GoalsTile extends StatelessWidget {
 class GoalSettingsForm extends StatefulWidget {
   const GoalSettingsForm({
     Key? key,
-    //required this.uid,
-
-    required this.gid,
-    required this.gtitle,
-    required this.gamount,
+    required this.uid,
+    required this.goal,
     //required this.genddate
   }) : super(key: key);
 
-  //final String uid;
-  final String gid;
-  final String gtitle;
-  final int gamount;
+  final GoalsData goal;
+  final String uid;
   //final Timestamp genddate;
   @override
   State<GoalSettingsForm> createState() => _GoalSettingsFormState();
@@ -115,24 +107,26 @@ class GoalSettingsForm extends StatefulWidget {
 class _GoalSettingsFormState extends State<GoalSettingsForm> {
 //Form
   final _formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
   final amountController = TextEditingController();
+
+  final amountSavedController = TextEditingController();
 
   final val = Validator();
 
   @override
   void dispose() {
+    nameController.dispose();
     amountController.dispose();
+    amountSavedController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    String dropdowntitlevalue = widget.gtitle;
-    String amount = (widget.gamount).toString();
-    //DateTime? _dateTime = (widget.genddate).toDate();
-
-    //mock database
-    List<String> goalTitle = ['Save', 'Reduce'];
+    String name = widget.goal.name;
+    String amount = (widget.goal.amountToSave).toString();
+    String amountSaved = (widget.goal.amountSaved).toString();
     return Form(
       key: _formKey,
       child: SizedBox(
@@ -145,35 +139,30 @@ class _GoalSettingsFormState extends State<GoalSettingsForm> {
                 style: kHeadingTextStyle,
               ),
               space,
-
               const Text(
-                'Goal Title',
+                'Name',
                 style: kSubTextStyle,
               ),
               smallSpace,
-
-              DropdownButtonFormField(
-                value: dropdowntitlevalue,
-                icon: const Icon(Icons.keyboard_arrow_down_outlined),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    dropdowntitlevalue = newValue!;
-                  });
-                },
-                items: goalTitle.map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
+              RoundTextField(
+                  controller: nameController,
+                  title: name,
+                  isPassword: false,
+                  onSaved: (String? value) {
+                    name != value;
+                  },
+                  validator: val.nameVal),
 
               space,
-
+              const Text(
+                'Amount To Save',
+                style: kSubTextStyle,
+              ),
+              smallSpace,
               //Goal Amount
               RoundDoubleTextField(
                 controller: amountController,
-                title: "Goal Percentage",
+                title: amount,
                 onSaved: (String? value) {
                   amount != value;
                 },
@@ -181,43 +170,103 @@ class _GoalSettingsFormState extends State<GoalSettingsForm> {
               ),
 
               space,
-
-              space,
-
-              //save button
-              SizedBox(
-                width: 300,
-                child: ElevatedButton(
-                  onPressed: () {
-                    /*if (_formKey.currentState!.validate()) {
-                      int amount = int.parse(amountController.value.text);
-
-                      var target = dropdowntargetvalue;
-                      var title = dropdowntitlevalue;
-                      Timestamp enddate = Timestamp.fromDate(_dateTime!);
-
-                      DatabaseService(widget.uid).updateGoal(
-                        widget.gid,
-                        amount,
-                        target,
-                        title,
-                        enddate,
-                      );
-                    }*/
-                    Navigator.pushNamed(context, "/managegoals");
-                  },
-                  style: kButtonStyle,
-                  child: const Text(
-                    'Update',
-                    style: kButtonTextStyle,
-                  ),
-                ),
+              const Text(
+                'Amount Saved',
+                style: kSubTextStyle,
               ),
+              smallSpace,
+              RoundDoubleTextField(
+                controller: amountSavedController,
+                title: amountSaved,
+                onSaved: (String? value) {
+                  amountSaved != value;
+                },
+                validator: val.nameVal,
+              ),
+              space,
+              //save button
+              saveBtn(),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget saveBtn() {
+    return StreamBuilder<TotalGoalsData>(
+        stream: DatabaseService(widget.uid).totalGoalsData,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            var totalGoalData = snapshot.data!;
+            return SizedBox(
+              width: 300,
+              child: ElevatedButton(
+                onPressed: () async {
+                  var goalamountToSave = 0;
+                  var goalamountSaved = 0;
+                  var goalname = '';
+
+                  if (amountController.text == '') {
+                    goalamountToSave = widget.goal.amountToSave;
+                  } else {
+                    goalamountToSave = int.parse(amountController.text);
+                  }
+
+                  if (amountSavedController.text == '') {
+                    goalamountSaved = widget.goal.amountToSave;
+                  } else {
+                    goalamountSaved = int.parse(amountSavedController.text);
+                  }
+
+                  if (nameController.text == '') {
+                    goalname = widget.goal.name;
+                  } else {
+                    goalname = nameController.text;
+                  }
+
+                  //total old//old
+                  var updatedTATS = LogicService().newAmount(
+                      totalGoalData.totalAmountToSave,
+                      widget.goal.amountToSave,
+                      goalamountToSave);
+
+                  var updatedTAS = LogicService().newAmount(
+                      totalGoalData.totalAmountSaved,
+                      widget.goal.amountSaved,
+                      goalamountSaved);
+
+                  var updatedProgress = LogicService()
+                      .goalProgress(goalamountSaved, goalamountToSave)
+                      .toInt();
+
+                  var updatedTotalProgress = LogicService()
+                      .goalProgress(updatedTAS, updatedTATS)
+                      .toInt();
+
+                  await DatabaseService(widget.uid).updateGoal(
+                      widget.goal.goalsid,
+                      goalamountToSave,
+                      goalamountSaved,
+                      goalname,
+                      updatedProgress,
+                      updatedTATS,
+                      updatedTAS,
+                      updatedTotalProgress);
+
+                  if (!mounted) return;
+                  Navigator.pushNamed(context, '/finance');
+                },
+                style: kButtonStyle,
+                child: const Text(
+                  'Save',
+                  style: kButtonTextStyle,
+                ),
+              ),
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
+        });
   }
 }
 
@@ -231,23 +280,35 @@ class GoalCardList extends StatefulWidget {
 class _GoalCardListState extends State<GoalCardList> {
   @override
   Widget build(BuildContext context) {
-     List<GoalsData> goals = [
-      GoalsData(
-          goalsid: '1',
-          progress: 10,
-          name: 'Save',
-          amountSaved: 50,
-          amountToSave: 500,
-          grecords: [
-            {"amount": 50, "type": "Bank"}
-          ]),
-    ];
+    final goals = Provider.of<List<GoalsData>>(context);
 
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       itemCount: goals.length,
       itemBuilder: (context, index) {
         return GoalCard(goal: goals[index]);
+      },
+    );
+  }
+}
+
+class BadgeCardList extends StatefulWidget {
+  const BadgeCardList({Key? key}) : super(key: key);
+
+  @override
+  State<BadgeCardList> createState() => _BadgeCardListState();
+}
+
+class _BadgeCardListState extends State<BadgeCardList> {
+  @override
+  Widget build(BuildContext context) {
+    final goals = Provider.of<List<BadgesData>>(context);
+
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: goals.length,
+      itemBuilder: (context, index) {
+        return BadgeCard(goal: goals[index]);
       },
     );
   }

@@ -18,7 +18,11 @@ const kSubTextStyle = TextStyle(
   fontWeight: FontWeight.w500,
 );
 
-const kButtonTextStyle = TextStyle(fontWeight: FontWeight.w600, fontSize: 20,);
+const kButtonTextStyle = TextStyle(
+  fontWeight: FontWeight.w600,
+  fontSize: 20,
+  color: Colors.black54,
+);
 
 final kButtonStyle = ButtonStyle(
   padding: MaterialStateProperty.all(

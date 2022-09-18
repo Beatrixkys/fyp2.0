@@ -1,8 +1,13 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fyp2/services/validator.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../constant.dart';
+import '../services/database.dart';
 import '../services/lists/goallist.dart';
+import '../services/logic.dart';
+import '../services/models/goals.dart';
+import '../services/models/user.dart';
 import 'components/buttons.dart';
 import 'components/cards.dart';
 import 'components/drawer.dart';
@@ -12,311 +17,460 @@ import 'components/round_components.dart';
 import 'components/theme_button.dart';
 
 class GoalScreen extends StatelessWidget {
-  final String uid;
-  const GoalScreen({Key? key, required this.uid}) : super(key: key);
+  const GoalScreen({
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+
     final controller = ScrollController();
 
-    return Scaffold(
-      drawer: const NavDrawer(),
-      appBar: AppBar(
-        actions: const [ChangeThemeButton()],
-      ),
-      body: SingleChildScrollView(
-        controller: controller,
-        child: Column(
-          children: [
-            MyHeader(
-                height: MediaQuery.of(context).size.height * 0.2,
-                color: Theme.of(context).colorScheme.primary,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'Goals',
-                          textAlign: TextAlign.start,
-                          style: kHeadingTextStyle,
-                        ),
-                        const Spacer(),
-                        NavigationButton(
-                          widget: TextButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, "/managegoals");
-                            },
-                            child: const ButtonCenterText(
-                              title: "Manage",
-                            ),
+    final User? user = auth.currentUser;
+    final uid = user!.uid;
+
+    Stream<MyUserData> myUserData = DatabaseService(uid).user;
+
+    return MultiProvider(
+        providers: [
+          StreamProvider<List<GoalsData>>.value(
+              value: DatabaseService(uid).goals, initialData: const []),
+          StreamProvider<List<BadgesData>>.value(
+              value: DatabaseService(uid).badges, initialData: const []),
+          StreamProvider<MyUserData>.value(
+            value: DatabaseService(uid).user,
+            initialData:
+                MyUserData(uid: uid, name: '', email: 'email', progress: 0),
+          ),
+        ],
+        builder: (context, snapshot) {
+          return Scaffold(
+            drawer: const NavDrawer(),
+            appBar: AppBar(
+              elevation: 0,
+              actions: const [ChangeThemeButton()],
+            ),
+            body: SingleChildScrollView(
+              controller: controller,
+              child: Column(
+                children: [
+                  MyHeader(
+                      height: MediaQuery.of(context).size.height * 0.2,
+                      color: Theme.of(context).colorScheme.primary,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                'Goals',
+                                textAlign: TextAlign.start,
+                                style: kHeadingTextStyle,
+                              ),
+                              const Spacer(),
+                              NavigationButton(
+                                widget: TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                ManageGoal(uid: uid)));
+                                  },
+                                  child: const ButtonCenterText(
+                                    title: "Manage",
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
+                        ],
+                      )),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                    child: Column(
+                      children: [
+                        space,
+                        ProgressBar(myUserData: myUserData),
+                        space,
+                        const TitleCard(
+                          title: "Overview of Goals",
+                          route: "/goals",
+                          button: "See More",
+                        ),
+                        space,
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.95,
+                          height: MediaQuery.of(context).size.height * 0.35,
+                          child: const GoalCardList(),
+                        ),
+                        space,
+                        const TitleCard(
+                          title: "Goals Achieved",
+                          route: "/goals",
+                          button: "See More",
+                        ),
+                        space,
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.95,
+                          height: MediaQuery.of(context).size.height * 0.25,
+                          child: const BadgeCardList(),
                         ),
                       ],
                     ),
-                  ],
-                )),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0),
-              child: Column(
-                children: [
-                  space,
-                  const ProgressBar(percent: 0.8, progress: "80%"),
-                  space,
-                  const TitleCard(
-                    title: "Overview of Goals",
-                    route: "/goals",
-                    button: "See More",
-                  ),
-                  space,
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.95,
-                    height: MediaQuery.of(context).size.height * 0.4,
-                    child: const GoalCardList(),
-                  ),
-                  space,
+                  )
                 ],
               ),
-            )
-          ],
-        ),
-      ),
-    );
+            ),
+          );
+        });
   }
 }
 
 class ManageGoal extends StatefulWidget {
-  const ManageGoal({Key? key}) : super(key: key);
+  final String uid;
+  const ManageGoal({Key? key, required this.uid}) : super(key: key);
 
   @override
   State<ManageGoal> createState() => _ManageGoalState();
 }
 
 class _ManageGoalState extends State<ManageGoal> {
+  void _popUp() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AddGoal(uid: widget.uid);
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0.0,
-        actions: const [ChangeThemeButton()],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            MyHeader(
-              height: MediaQuery.of(context).size.height * 0.15,
-              color: Theme.of(context).colorScheme.primary,
+    return MultiProvider(
+        providers: [
+          StreamProvider<List<GoalsData>>.value(
+              value: DatabaseService(widget.uid).goals, initialData: const []),
+        ],
+        builder: (context, snapshot) {
+          return Scaffold(
+            appBar: AppBar(
+              elevation: 0.0,
+              actions: const [ChangeThemeButton()],
+            ),
+            body: SafeArea(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: const [
-                  Text(
-                    'Manage Goals',
-                    style: kHeadingTextStyle,
+                children: [
+                  MyHeader(
+                    height: MediaQuery.of(context).size.height * 0.15,
+                    color: Theme.of(context).colorScheme.primary,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: const [
+                        Text(
+                          'Manage Goals',
+                          style: kHeadingTextStyle,
+                        ),
+                      ],
+                    ),
                   ),
+                  Expanded(
+                      child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        space,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text('Existing Data',
+                                style: kHeadingTextStyle),
+                            const Spacer(),
+                            Container(
+                              height: 40,
+                              width: 120,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.secondary,
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: TextButton(
+                                onPressed: () => _popUp(),
+                                child: Center(
+                                  child: Text(
+                                    "Add",
+                                    style: TextStyle(
+                                        color:
+                                            Theme.of(context).primaryColorDark,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 20),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        space,
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.69,
+                            child: GoalList(
+                              uid: widget.uid,
+                            )),
+                      ],
+                    ),
+                  )),
                 ],
               ),
             ),
-            Expanded(
-                child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  space,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: const [
-                      Text('Existing Data', style: kHeadingTextStyle),
-                      Spacer(),
-                      SmallButton(title: 'Add', route: '/addgoal'),
-                    ],
-                  ),
-                  space,
-                  SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.69,
-                      child: const GoalList()),
-                ],
-              ),
-            )),
-          ],
-        ),
-      ),
-    );
+          );
+        });
   }
 }
 
 class AddGoal extends StatefulWidget {
-  const AddGoal({Key? key}) : super(key: key);
+  final String uid;
+  const AddGoal({Key? key, required this.uid}) : super(key: key);
 
   @override
   State<AddGoal> createState() => _AddGoalState();
 }
 
 class _AddGoalState extends State<AddGoal> {
-  String dropdowntitlevalue = 'Save';
-  String dropdowntargetvalue = 'Income';
+  double currentsliderval = 0;
+  String dropdowngoalnamevalue = 'Car';
+  double monthlysavings = 0;
 //Form
   final _formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
   final amountController = TextEditingController();
 
   final val = Validator();
 
-  DateTime? _dateTime;
+  bool suggestedState = true;
+
+  void toggleView() {
+    setState(() {
+      suggestedState = !suggestedState;
+    });
+  }
 
   @override
   void dispose() {
+    nameController.dispose();
     amountController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    //form intialisaion
     String amount = "0";
+    String name = "";
 
-    //mock database
-    List<String> goalTitle = ['Save', 'Reduce'];
-    List<String> goalTarget = ['Income', 'Expense'];
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0.0,
-        actions: const [ChangeThemeButton()],
-      ),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              MyHeader(
-                height: MediaQuery.of(context).size.height * 0.2,
-                color: Theme.of(context).colorScheme.primary,
-                child: const Center(
-                  child: Text(
-                    'Add Goals',
-                    style: kHeadingTextStyle,
-                  ),
+    return Dialog(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            const Spacer(),
+            const Text(
+              'Add Goals',
+              style: kHeadingTextStyle,
+            ),
+            space,
+            Row(
+              children: [
+                const Spacer(),
+                const Text(
+                  'Switch:',
+                  style: kTitleTextStyle,
+                ),
+                const Spacer(),
+                _toggleBtn(),
+                const Spacer(),
+              ],
+            ),
+            space,
+            const Divider(
+              thickness: 2.0,
+            ),
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 0.7,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    space,
+                    const Text(
+                      'Goal Name',
+                      style: kSubTextStyle,
+                    ),
+                    space,
+
+                    suggestedState
+                        ? _dropDownFormField(name)
+                        : _formTextField(name),
+
+                    space,
+
+                    //Goal Amount
+                    RoundDoubleTextField(
+                      controller: amountController,
+                      title: "Goal Amount To Save",
+                      onSaved: (String? value) {
+                        amount != value;
+                      },
+                      validator: val.amountVal,
+                    ),
+
+                    space,
+
+                    if (amountController.text != "") _goalPrediction(),
+                    //save button
+                    _saveBtn(widget.uid),
+                  ],
                 ),
               ),
-              Expanded(
-                  child: SizedBox(
-                width: 300,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    children: [
-                      space,
-                      const Text(
-                        'Goal Title',
-                        style: kSubTextStyle,
-                      ),
-                      space,
+            ),
+            const Spacer(),
+          ],
+        ),
+      ),
+    );
+  }
 
-                      //Use Provider to display list from DB 
+  Widget _goalPrediction() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      color: Theme.of(context).colorScheme.tertiary,
+      child: Column(
+        children: [
+          Text(
+            "Save  $monthlysavings Monthly",
+            style: const TextStyle(
+              fontSize: 25,
+              fontWeight: FontWeight.w400,
+              fontFamily: 'Nunito',
+            ),
+          ),
+          Text(
+            "To Achieve ${amountController.text} In:",
+            style: const TextStyle(
+              fontSize: 22.0,
+              fontWeight: FontWeight.w400,
+              fontFamily: 'Nunito',
+            ),
+          ),
+          space,
+          Text(
+            " $currentsliderval Months",
+            style: const TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Nunito',
+            ),
+          ),
+          Slider(
+              value: currentsliderval,
+              max: 180,
+              divisions: 60,
+              label: currentsliderval.round().toString(),
+              onChanged: (double value) {
+                setState(() {
+                  currentsliderval = value;
+                  monthlysavings = LogicService()
+                      .goalToSave(amountController.text, currentsliderval);
+                });
+              }),
+        ],
+      ),
+    );
+  }
 
-                      DropdownButtonFormField(
-                        value: dropdowntitlevalue,
-                        icon: const Icon(Icons.keyboard_arrow_down_outlined),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            dropdowntitlevalue = newValue!;
-                          });
-                        },
-                        items: goalTitle
-                            .map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                      ),
-
-                      space,
-                      const Text(
-                        'Goal Target',
-                        style: kSubTextStyle,
-                      ),
-
-                      DropdownButtonFormField(
-                        value: dropdowntargetvalue,
-                        icon: const Icon(Icons.keyboard_arrow_down_outlined),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            dropdowntargetvalue = newValue!;
-                          });
-                        },
-                        items: goalTarget
-                            .map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                      ),
-
-                      space,
-
-                      //Goal Amount
-                      RoundDoubleTextField(
-                        controller: amountController,
-                        title: "Goal Percentage",
-                        onSaved: (String? value) {
-                          amount != value;
-                        },
-                        validator: val.nameVal,
-                      ),
-
-                      space,
-
-                      //TIME
-                      const Text(
-                        'Choose End Date ',
-                        style: kSubTextStyle,
-                      ),
-
-                      TextButton.icon(
-                        onPressed: () async {
-                          DateTime? newDate = await showDatePicker(
-                              context: context,
-                              firstDate: DateTime.now(),
-                              initialDate: DateTime.now(),
-                              lastDate: DateTime(2222));
-
-                          if (newDate == null) return;
-
-                          setState(() => _dateTime = newDate);
-                        },
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(_dateTime == null
-                            ? 'Choose A Date'
-                            : DateFormat('dd/MM/yyyy')
-                                .format(_dateTime!)
-                                .toString()),
-                      ),
-
-                      space,
-
-                      //save button
-                      SizedBox(
-                        width: 300,
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          style: kButtonStyle,
-                          child: Text(
-                            'Save',
-                            style: TextStyle(
-                                color: Theme.of(context).primaryColorDark,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )),
-            ],
+  Widget _toggleBtn() {
+    return Container(
+      height: 40,
+      width: 120,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.secondary,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: TextButton(
+        onPressed: () => toggleView(),
+        child: Center(
+          child: Text(
+            suggestedState ? "Suggested" : " Custom ",
+            style: kButtonTextStyle,
           ),
         ),
       ),
     );
   }
+
+  Widget _formTextField(String name) {
+    return RoundTextField(
+        controller: nameController,
+        title: "Name",
+        isPassword: false,
+        onSaved: (String? value) {
+          name != value;
+        },
+        validator: val.nameVal);
+  }
+
+  Widget _dropDownFormField(String name) {
+    var accounts = ['Car', 'Vacation', 'House', 'Wedding'];
+
+    return DropdownButtonFormField(
+      value: dropdowngoalnamevalue,
+      icon: const Icon(Icons.keyboard_arrow_down_outlined),
+      onChanged: (String? newValue) {
+        setState(() {
+          dropdowngoalnamevalue = newValue!;
+        });
+      },
+      items: accounts.map<DropdownMenuItem<String>>((String value) {
+        return DropdownMenuItem(
+          value: value,
+          child: Text(value),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _saveBtn(String uid) {
+    return SizedBox(
+      width: 300,
+      child: ElevatedButton(
+        onPressed: () async {
+          if (_formKey.currentState!.validate()) {
+            int amount = int.parse(amountController.value.text);
+
+            var name = suggestedState
+                ? dropdowngoalnamevalue
+                : nameController.value.text;
+
+            int amountSaved = 0;
+            int progress = 0;
+
+            await DatabaseService(uid)
+                .saveGoal(amount, name, amountSaved, progress);
+
+            if (!mounted) return;
+            Navigator.pop(context);
+          }
+        },
+        style: kButtonStyle,
+        child: Text(
+          "Save",
+          style: TextStyle(
+              color: Theme.of(context).primaryColorDark,
+              fontWeight: FontWeight.w700,
+              fontSize: 16),
+        ),
+      ),
+    );
+  }
+
+  //Widget for Real Time
 }

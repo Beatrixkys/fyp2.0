@@ -1,11 +1,11 @@
 class PersonaData {
-  final String icon; 
-  final String personaname;
-  final String personaDescription;
+  final String icon;
+  final String pname;
+  final String pdescription;
 
   PersonaData({
-    required this.icon, 
-    required this.personaname,
-    required this.personaDescription,
+    required this.icon,
+    required this.pname,
+    required this.pdescription,
   });
 }

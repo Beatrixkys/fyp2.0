@@ -1,13 +1,15 @@
-/*
 import 'package:flutter/material.dart';
-import 'package:fyp2/services/models/goals.dart';
-import 'package:fyp2/services/validator.dart';
+import 'package:provider/provider.dart';
 
 import '../../constant.dart';
 import '../../screens/components/round_components.dart';
+import '../database.dart';
+import '../models/records.dart';
+import '../validator.dart';
 
 class RecordList extends StatefulWidget {
-  const RecordList({Key? key}) : super(key: key);
+  final String uid;
+  const RecordList({Key? key, required this.uid}) : super(key: key);
 
   @override
   State<RecordList> createState() => _RecordListState();
@@ -16,55 +18,25 @@ class RecordList extends StatefulWidget {
 class _RecordListState extends State<RecordList> {
   @override
   Widget build(BuildContext context) {
-    List<RecordsData> records = [
-      RecordsData(
-          recordid: "1",
-          name: "Shopping",
-          amount: 50,
-          accname: "Bank",
-          recordtype: "Income",
-          recordcategory: "Shopping"),
-      RecordsData(
-          recordid: "1",
-          name: "Shopping",
-          amount: 50,
-          accname: "Bank",
-          recordtype: "Income",
-          recordcategory: "Shopping"),
-      RecordsData(
-          recordid: "1",
-          name: "Shopping",
-          amount: 50,
-          accname: "Bank",
-          recordtype: "Income",
-          recordcategory: "Shopping"),
-      RecordsData(
-          recordid: "1",
-          name: "Shopping",
-          amount: 50,
-          accname: "Bank",
-          recordtype: "Income",
-          recordcategory: "Shopping"),
-    ];
-
+    final records = Provider.of<List<RecordsData>>(context);
     return ListView.builder(
       scrollDirection: Axis.vertical,
       itemCount: records.length,
       itemBuilder: (context, index) {
-        return RecordsTile(record: records[index]);
+        return RecordsTile(record: records[index], uid: widget.uid);
       },
     );
   }
 }
 
 class RecordsTile extends StatelessWidget {
-  const RecordsTile({
-    Key? key,
-    required this.record, //required this.uid
-  }) : super(key: key);
+  const RecordsTile(
+      {Key? key, required this.record, required this.uid //required this.uid
+      })
+      : super(key: key);
 
   final RecordsData record;
-  //final String uid;
+  final String uid;
 
   @override
   Widget build(BuildContext context) {
@@ -77,13 +49,8 @@ class RecordsTile extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(vertical: 20.0, horizontal: 60.0),
               child: RecordSettingsForm(
-                //uid: uid,
-                rid: record.recordid,
-                rname: record.name,
-                ramount: record.amount,
-                rtype: record.recordtype,
-                raccname: record.accname,
-                rcategory: record.recordcategory,
+                record: record,
+                uid: uid,
               ),
             );
           });
@@ -99,10 +66,10 @@ class RecordsTile extends StatelessWidget {
             backgroundImage: AssetImage('assets/cash.png'),
           ),
           title: Text(
-            record.name,
+            'RM ${record.amount}',
             style: kTitleTextStyle,
           ),
-          subtitle: Text('RM ${record.amount} of ${record.recordtype} '),
+          subtitle: Text(record.type),
           trailing: SizedBox(
             width: 96,
             child: Row(
@@ -113,7 +80,9 @@ class RecordsTile extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outlined),
-                  onPressed: () async {},
+                  onPressed: () async {
+                    await DatabaseService(uid).deleteRecord(record.recordid);
+                  },
                 ),
               ],
             ),
@@ -125,24 +94,14 @@ class RecordsTile extends StatelessWidget {
 }
 
 class RecordSettingsForm extends StatefulWidget {
-  const RecordSettingsForm(
-      {Key? key,
-      //required this.uid,
-      required this.rid,
-      required this.rname,
-      required this.ramount,
-      required this.raccname,
-      required this.rcategory,
-      required this.rtype})
-      : super(key: key);
+  const RecordSettingsForm({
+    Key? key,
+    required this.record,
+    required this.uid,
+  }) : super(key: key);
 
-  //final String uid;
-  final String rid;
-  final String rname;
-  final int ramount;
-  final String raccname;
-  final String rcategory;
-  final String rtype;
+  final RecordsData record;
+  final String uid;
 
   @override
   State<RecordSettingsForm> createState() => _RecordSettingsFormState();
@@ -157,149 +116,81 @@ class _RecordSettingsFormState extends State<RecordSettingsForm> {
 
   @override
   Widget build(BuildContext context) {
-    String name = widget.rname;
-    String amount = widget.ramount.toString();
-    String dropdownaccvalue = widget.raccname;
-    String dropdownreccatvalue = widget.rcategory;
-    String dropdownrectypevalue = widget.rtype;
-
-    //mockdb
-
-    var accounts = ['Bank', 'Cash', 'E-Wallet'];
-    var record = ['Leisure', 'Work', 'Transport'];
-    var recordType = ['Income', 'Expense'];
-
+    String type = widget.record.type;
+    String amount = widget.record.amount.toString();
     return Form(
       key: _formKey,
-      child: SizedBox(
-        height: 500,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const Text(
-                'Edit Account',
-                style: kHeadingTextStyle,
-              ),
-              space,
-              const Text(
-                'Record Name',
-                style: kSubTextStyle,
-              ),
-              RoundTextField(
-                  controller: nameController,
-                  title: name,
-                  isPassword: false,
-                  onSaved: (String? value) {
-                    name != value;
-                  },
-                  validator: val.nameVal),
-              space,
-              const Text(
-                'Record Amount ',
-                style: kSubTextStyle,
-              ),
-              RoundDoubleTextField(
-                  controller: amountController,
-                  title: amount,
-                  onSaved: (String? value) {
-                    amount != value;
-                  },
-                  validator: val.nameVal),
-              const Text(
-                'Records Type',
-                style: kSubTextStyle,
-              ),
-              DropdownButtonFormField(
-                value: dropdownrectypevalue,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    dropdownrectypevalue = newValue!;
-                  });
-                },
-                items: recordType.map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-              const Text(
-                'Accounts Type',
-                style: kSubTextStyle,
-              ),
-              DropdownButtonFormField(
-                value: dropdownaccvalue,
-                icon: const Icon(Icons.keyboard_arrow_down_outlined),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    dropdownaccvalue = newValue!;
-                  });
-                },
-                items: accounts.map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-              space,
-              const Text(
-                'Record Category',
-                style: kSubTextStyle,
-              ),
-              DropdownButtonFormField(
-                value: dropdownreccatvalue,
-                icon: const Icon(Icons.keyboard_arrow_down_outlined),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    dropdownreccatvalue = newValue!;
-                  });
-                },
-                items: record.map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-              space,
-              SizedBox(
-                width: 300,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    /*
-                    if (_formKey.currentState!.validate()) {
-                      //setState(() => loading = true);
-                      var name = nameController.value.text;
-                      int amount = int.parse(amountController.value.text);
-                      var recordtype = dropdownrectypevalue;
-                      var accname = dropdownaccvalue;
-                      var recordcategory = dropdownreccatvalue;
-
-                      await DatabaseService(widget.uid).updateRecord(
-                          name,
-                          amount,
-                          recordtype,
-                          recordcategory,
-                          accname,
-                          widget.rid);
-                    }
-                    */
-
-                    Navigator.pushNamed(context, '/finance');
-                  },
-                  style: kButtonStyle,
-                  child: const Text(
-                    'Save',
-                    style: kButtonTextStyle,
-                  ),
-                ),
-              ),
-            ],
+      child: Column(
+        children: [
+          const Text(
+            'Edit Record',
+            style: kHeadingTextStyle,
           ),
+          space,
+          const Text(
+            'Record Name',
+            style: kSubTextStyle,
+          ),
+          RoundTextField(
+              controller: nameController,
+              title: type,
+              isPassword: false,
+              onSaved: (String? value) {
+                type != value;
+              },
+              validator: val.nameVal),
+          space,
+          const Text(
+            'Record Amount ',
+            style: kSubTextStyle,
+          ),
+          RoundDoubleTextField(
+              controller: amountController,
+              title: amount,
+              onSaved: (String? value) {
+                amount != value;
+              },
+              validator: val.nameVal),
+          space,
+          saveBtn(),
+        ],
+      ),
+    );
+  }
+
+  Widget saveBtn() {
+    return SizedBox(
+      width: 300,
+      child: ElevatedButton(
+        onPressed: () async {
+          var recamount = 0;
+          var recname = '';
+          if (amountController.text == '') {
+            recamount = widget.record.amount;
+          } else {
+            recamount = int.parse(amountController.text);
+          }
+
+          if (nameController.text == '') {
+            recname = widget.record.type;
+          } else {
+            recname = nameController.text;
+          }
+
+          //total old//old
+
+          await DatabaseService(widget.uid)
+              .updateRecord(recname, recamount, widget.record.recordid);
+
+          if (!mounted) return;
+          Navigator.pop(context);
+        },
+        style: kButtonStyle,
+        child: const Text(
+          'Save',
+          style: kButtonTextStyle,
         ),
       ),
     );
   }
 }
-*/
