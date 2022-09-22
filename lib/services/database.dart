@@ -39,9 +39,11 @@ class DatabaseService {
 
   Future<void> savePersona(
       String? personaname, String? personaDescription, String? icon) async {
-    return await userCollection.doc(uid).collection("persona").doc().set(
-        {'personaname': personaname, 'personaDescription': personaDescription},
-        SetOptions(merge: true));
+    return await userCollection.doc(uid).collection("persona").doc(uid).set({
+      'personaname': personaname,
+      'personaDescription': personaDescription,
+      'icon': icon,
+    });
   }
 
   Future<void> updatePersona(
